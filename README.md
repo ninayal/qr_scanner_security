@@ -35,11 +35,13 @@ So users can see a safety report before taking action.
 
 ## Demo Screenshots (from the report)
 
+
+Scan QR code
 ![Image 22-12-25 at 21 29](https://github.com/user-attachments/assets/8d9eb40c-9d0e-436c-a3dd-0d330bfb20ca)
 
 
 
-
+Result 
 ![Screenshot 2025-12-22 at 21 31 23 2](https://github.com/user-attachments/assets/cdbc7c34-9574-49de-9577-4f54a5291807)
 
 
