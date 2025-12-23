@@ -1,0 +1,171 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:http/http.dart' as http;
+import 'package:google_fonts/google_fonts.dart';
+import 'package:percent_indicator/percent_indicator.dart';
+
+void main() => runApp(const MaterialApp(
+      debugShowCheckedModeBanner: false, 
+      home: SecurityScanner(),
+    ));
+
+class SecurityScanner extends StatefulWidget {
+  const SecurityScanner({super.key});
+  @override
+  State<SecurityScanner> createState() => _SecurityScannerState();
+}
+
+class _SecurityScannerState extends State<SecurityScanner> {
+  bool isScanning = true;
+  bool isLoading = false;
+  final MobileScannerController scannerController = MobileScannerController();
+
+  // Hàm phân tích bảo mật chuyên sâu từ VirusTotal
+  Future<void> checkSecurity(String url) async {
+    setState(() {
+      isScanning = false;
+      isLoading = true;
+    });
+
+    const apiKey = 'YOUR_API_KEY_HERE'; // THAY API KEY CỦA BẠN VÀO ĐÂY
+
+    try {
+      // Ép VirusTotal phân tích lại URL để có kết quả mới nhất
+      await http.post(
+        Uri.parse('https://www.virustotal.com/api/v3/urls'),
+        headers: {'x-apikey': apiKey},
+        body: {'url': url},
+      );
+
+      await Future.delayed(const Duration(seconds: 2));
+
+      String urlId = base64Url.encode(utf8.encode(url)).replaceAll('=', '');
+      final response = await http.get(
+        Uri.parse('https://www.virustotal.com/api/v3/urls/$urlId'),
+        headers: {'x-apikey': apiKey},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body)['data']['attributes'];
+        final stats = data['last_analysis_stats'];
+        final reputation = data['reputation'] ?? 0;
+        
+        _showFullReport(url, stats, reputation);
+      } else {
+        _showError("Dữ liệu đang được xử lý hoặc URL không hợp lệ.");
+      }
+    } catch (e) {
+      _showError("Lỗi kết nối API!");
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  void _showFullReport(String url, Map stats, int reputation) {
+    int mal = stats['malicious'] ?? 0;
+    int phi = stats['phishing'] ?? 0;
+    int sus = stats['suspicious'] ?? 0;
+    int safe = stats['harmless'] ?? 0;
+    
+    bool isDanger = (mal + phi + sus) > 0;
+    Color theme = isDanger ? Colors.redAccent : Colors.greenAccent;
+
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      backgroundColor: const Color(0xFF0F172A),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("VIRUSTOTAL FULL REPORT", style: GoogleFonts.orbitron(color: Colors.cyanAccent, letterSpacing: 2)),
+            const SizedBox(height: 25),
+            CircularPercentIndicator(
+              radius: 60.0, lineWidth: 10.0,
+              percent: isDanger ? 0.9 : 1.0,
+              center: Icon(isDanger ? Icons.gpp_maybe : Icons.verified_user, color: theme, size: 50),
+              progressColor: theme,
+            ),
+            const SizedBox(height: 15),
+            Text(isDanger ? "DANGEROUS DETECTED!" : "CLEAN URL", 
+                 style: TextStyle(color: theme, fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(url, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white38, fontSize: 10), maxLines: 1),
+            const Divider(color: Colors.white10, height: 30),
+            
+            // Hiển thị tất cả thông số
+            Wrap(
+              spacing: 20, runSpacing: 20,
+              alignment: WrapAlignment.center,
+              children: [
+                _statItem("MALWARE", "$mal", Colors.red),
+                _statItem("PHISHING", "$phi", Colors.orange),
+                _statItem("SUSPICIOUS", "$sus", Colors.yellow),
+                _statItem("SAFE", "$safe", Colors.green),
+                _statItem("REPUTATION", "$reputation", Colors.blueAccent),
+              ],
+            ),
+            
+            const SizedBox(height: 30),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme, foregroundColor: Colors.black,
+                minimumSize: const Size(double.infinity, 55),
+              ),
+              onPressed: () { Navigator.pop(context); setState(() => isScanning = true); },
+              child: const Text("CLOSE & RESCAN", style: TextStyle(fontWeight: FontWeight.bold)),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statItem(String label, String val, Color col) => Column(children: [
+        Text(val, style: TextStyle(color: col, fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 9, fontWeight: FontWeight.bold)),
+      ]);
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.redAccent));
+    setState(() => isScanning = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          if (isScanning) MobileScanner(
+            controller: scannerController,
+            onDetect: (capture) {
+              final String? code = capture.barcodes.first.rawValue;
+              if (code != null) checkSecurity(code);
+            },
+          ),
+          // Khung quét UI tĩnh
+          IgnorePointer(
+            child: Center(
+              child: Container(
+                width: 260, height: 260,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.cyanAccent, width: 2),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+            ),
+          ),
+          if (isLoading) Container(color: Colors.black87, child: const Center(child: CircularProgressIndicator(color: Colors.cyanAccent))),
+          Positioned(
+            top: 70, left: 0, right: 0,
+            child: Center(child: Text("QR SHIELD PRO", 
+              style: GoogleFonts.orbitron(color: Colors.cyanAccent, fontSize: 26, fontWeight: FontWeight.bold, letterSpacing: 4))),
+          ),
+        ],
+      ),
+    );
+  }
+}

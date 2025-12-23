@@ -1,0 +1,19 @@
+name: qr_scanner_security
+description: "Ứng dụng quét QR bảo mật macOS"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mobile_scanner: ^5.2.3
+  http: ^1.1.0
+  google_fonts: ^6.1.0
+  percent_indicator: ^4.2.3
+  url_launcher: ^6.2.0
+
+flutter:
+  uses-material-design: true
