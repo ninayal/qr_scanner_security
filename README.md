@@ -35,7 +35,11 @@ So users can see a safety report before taking action.
 
 ## Demo Screenshots (from the report)
 
-[Image 22-12-25 at 21 29](https://github.com/user-attachments/assets/31171601-298d-4148-898f-8bb7266e9c72)
+![Image 22-12-25 at 21 29](https://github.com/user-attachments/assets/8d9eb40c-9d0e-436c-a3dd-0d330bfb20ca)
+
+
+
+
 ![Screenshot 2025-12-22 at 21 31 23 2](https://github.com/user-attachments/assets/cdbc7c34-9574-49de-9577-4f54a5291807)
 
 
