@@ -33,7 +33,7 @@ So users can see a safety report before taking action.
 
 ---
 
-## Demo Screenshots (from the report)
+## Demo QR Shield Pro
 
 
 Scan QR code
